@@ -86,8 +86,8 @@ public class DoctorDashboard extends JFrame {
                 Risk r = p.getLatestRisk();
                 riskScore = String.format("%.1f", r.getTotalScore());
                 riskLevel = r.getRiskLevel();
-                // Risk 클래스에 assessedAt getter가 있다면 사용
-                // date = r.getAssessedAt().toString();
+
+                date = r.getAssessedAt().toLocalDate().toString();
             } catch (Exception e) {
                 // 데이터 없음
             }

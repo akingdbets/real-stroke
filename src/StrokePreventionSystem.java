@@ -18,6 +18,7 @@ public class StrokePreventionSystem {
         HealthData h1 = new HealthData(UUID.randomUUID().toString(), "user001",
                 true, 150.0f, "비만", 1, 160); // 고혈압, 고혈당, 흡연
         p1.inputHealthData(h1, riskManager); // 분석 실행 및 저장
+        p1.performRiskAnalysis(riskManager, params);
         doctor.addPatient(p1);
 
         // 환자 B (정상)
@@ -25,6 +26,7 @@ public class StrokePreventionSystem {
         HealthData h2 = new HealthData(UUID.randomUUID().toString(), "user002",
                 false, 90.0f, "정상", 4, 110); // 정상 수치
         p2.inputHealthData(h2, riskManager);
+        p2.performRiskAnalysis(riskManager, params);
         doctor.addPatient(p2);
 
         // 환자 C (데이터 없음)

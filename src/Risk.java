@@ -19,4 +19,5 @@ public class Risk {
     // Getters
     public double getTotalScore() { return totalScore; }
     public String getRiskLevel() { return riskLevel; }
+    public LocalDateTime getAssessedAt() { return assessedAt; }
 }
