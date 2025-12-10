@@ -1,36 +1,49 @@
-import javax.swing.SwingUtilities;
+import javax.swing.*;
+import java.util.UUID;
 
 public class StrokePreventionSystem {
 
     public static void main(String[] args) {
-        // --- 파라미터 튜닝 예시 ---
-        // 1. 흡연: 피우면 무조건 20점
-        // 2. 혈당 가중치: 1당 0.5점 (예: 기준보다 40 높으면 20점)
-        // 3. 혈압 가중치: 1당 1.0점 (예: 기준보다 20 높으면 20점)
-        // 4. 운동부족: 10점
-        // 5. 기준값: 혈당 126, 혈압 140
-        // 6. 위험 총점 기준: 60점 이상이면 알림
-
-        Parameter params = new Parameter(
-                20.0,   // smokingScore
-                0.5,    // bloodSugarWeight (곱해질 값이라 작게 설정)
-                1.0,    // bloodPressureWeight (혈압이 더 치명적이므로 높게)
-                10.0,   // inactivityScore
-                126.0f, // stdBloodSugar
-                140,    // stdMaxBloodPressure
-                60.0    // totalRiskThreshold
-        );
-
+        // 1. 파라미터 설정 (기존과 동일)
+        Parameter params = new Parameter(20.0, 0.5, 1.0, 10.0, 126.0f, 140, 60.0);
         NotificationService notiService = new ConsoleNotificationService();
         RiskManager riskManager = new RiskManager(notiService);
-        Patient patient = new Patient("user001", "이순신");
 
-        System.out.println("[System] 시스템을 구동합니다.");
+        // 2. 주치의 생성
+        Doctor doctor = new Doctor("doc001", "김닥터");
 
-        // 2. 메인 대시보드 실행
+        // 3. 테스트 데이터 생성 (InitDb 역할)
+        // 환자 A (고위험)
+        Patient p1 = new Patient("user001", "홍길동");
+        HealthData h1 = new HealthData(UUID.randomUUID().toString(), "user001",
+                true, 150.0f, "비만", 1, 160); // 고혈압, 고혈당, 흡연
+        p1.inputHealthData(h1, riskManager); // 분석 실행 및 저장
+        doctor.addPatient(p1);
+
+        // 환자 B (정상)
+        Patient p2 = new Patient("user002", "이순신");
+        HealthData h2 = new HealthData(UUID.randomUUID().toString(), "user002",
+                false, 90.0f, "정상", 4, 110); // 정상 수치
+        p2.inputHealthData(h2, riskManager);
+        doctor.addPatient(p2);
+
+        // 환자 C (데이터 없음)
+        Patient p3 = new Patient("user003", "강감찬");
+        doctor.addPatient(p3);
+
+        System.out.println("[System] 주치의 및 환자 데이터 초기화 완료.");
+
+        // 4. GUI 실행 (주치의 패널 & 환자 대시보드 동시 실행 for Test)
         SwingUtilities.invokeLater(() -> {
-            MainDashboard dashboard = new MainDashboard(patient, riskManager, params);
-            dashboard.setVisible(true);
+            // (A) 주치의 패널 실행
+            DoctorDashboard doctorDashboard = new DoctorDashboard(doctor);
+            doctorDashboard.setLocation(100, 100);
+            doctorDashboard.setVisible(true);
+
+            // (B) 환자(홍길동) 대시보드도 같이 띄우기 (테스트용)
+            MainDashboard patientDashboard = new MainDashboard(p1, riskManager, params);
+            patientDashboard.setLocation(750, 100);
+            patientDashboard.setVisible(true);
         });
     }
 }
