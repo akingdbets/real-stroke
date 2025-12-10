@@ -8,7 +8,6 @@ public class HealthDataInputUI extends JFrame {
 
     private Patient currentPatient;
     private RiskManager riskManager;
-    // Parameter parameter; // [제거] 입력 단계에서는 분석 기준이 필요 없음
 
     // UI 컴포넌트
     private JTextField tfMaxBP;
@@ -17,18 +16,20 @@ public class HealthDataInputUI extends JFrame {
     private JComboBox<Integer> comboActivity;
     private JTextArea taResult;
 
-    // 생성자 파라미터에서 Parameter 제거
     public HealthDataInputUI(Patient patient, RiskManager riskManager) {
         this.currentPatient = patient;
         this.riskManager = riskManager;
 
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        setTitle("건강 데이터 입력 (저장 전용)");
+        setTitle("건강 데이터 입력");
         setSize(400, 500);
-        setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+
+        // [수정 1] 창 닫기 버튼(X)을 누르면 창이 꺼지도록 설정 (기존: DO_NOTHING_ON_CLOSE)
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+
+        setLocationRelativeTo(null); // 화면 중앙 배치
         setLayout(new BorderLayout());
 
-        // 입력 패널
+        // 1. 입력 패널 구성
         JPanel inputPanel = new JPanel(new GridLayout(6, 2, 10, 10));
         inputPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
@@ -53,19 +54,30 @@ public class HealthDataInputUI extends JFrame {
         chkSmoking = new JCheckBox("흡연 중");
         inputPanel.add(chkSmoking);
 
-        inputPanel.add(new JLabel(""));
-        inputPanel.add(new JLabel(""));
+        // 2. 버튼 패널 (저장 / 닫기)
+        JPanel btnPanel = new JPanel(new FlowLayout());
 
-        // 버튼 텍스트 변경
-        JButton btnSubmit = new JButton("데이터 저장하기");
+        JButton btnSubmit = new JButton("저장하기");
+        btnSubmit.setFont(new Font("SansSerif", Font.BOLD, 14));
+        btnSubmit.setBackground(new Color(200, 230, 255)); // 연한 파랑
         btnSubmit.addActionListener(new SubmitAction());
 
-        taResult = new JTextArea(8, 20);
+        // [수정 2] '닫기' 버튼 추가 (저장하지 않고 돌아가기)
+        JButton btnCancel = new JButton("닫기");
+        btnCancel.setFont(new Font("SansSerif", Font.PLAIN, 14));
+        btnCancel.addActionListener(e -> dispose()); // 현재 창 닫기
+
+        btnPanel.add(btnSubmit);
+        btnPanel.add(btnCancel);
+
+        // 3. 결과/상태 로그 영역
+        taResult = new JTextArea(5, 20);
         taResult.setEditable(false);
-        taResult.setFont(new Font("Monospaced", Font.PLAIN, 14));
+        taResult.setText("데이터를 입력하고 저장 버튼을 누르세요.");
+        taResult.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         add(inputPanel, BorderLayout.NORTH);
-        add(btnSubmit, BorderLayout.CENTER);
+        add(btnPanel, BorderLayout.CENTER);
         add(new JScrollPane(taResult), BorderLayout.SOUTH);
     }
 
@@ -74,8 +86,17 @@ public class HealthDataInputUI extends JFrame {
         public void actionPerformed(ActionEvent e) {
             try {
                 // 1. 입력값 파싱
-                int maxBP = Integer.parseInt(tfMaxBP.getText());
-                float bloodSugar = Float.parseFloat(tfBloodSugar.getText());
+                String strMaxBP = tfMaxBP.getText().trim();
+                String strBloodSugar = tfBloodSugar.getText().trim();
+
+                if (strMaxBP.isEmpty() || strBloodSugar.isEmpty()) {
+                    JOptionPane.showMessageDialog(HealthDataInputUI.this,
+                            "혈압과 혈당은 필수 입력값입니다.", "입력 오류", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+
+                int maxBP = Integer.parseInt(strMaxBP);
+                float bloodSugar = Float.parseFloat(strBloodSugar);
                 String bodyComp = tfBodyComp.getText();
                 int activity = (Integer) comboActivity.getSelectedItem();
                 boolean isSmoking = chkSmoking.isSelected();
@@ -83,7 +104,7 @@ public class HealthDataInputUI extends JFrame {
                 // 2. HealthData 객체 생성
                 HealthData data = new HealthData(
                         UUID.randomUUID().toString().substring(0, 8),
-                        "user001", // 실제 앱에선 로그인 세션 ID 사용
+                        currentPatient.getName(), // ID 대신 이름 사용 (임시)
                         isSmoking,
                         bloodSugar,
                         bodyComp,
@@ -91,47 +112,25 @@ public class HealthDataInputUI extends JFrame {
                         maxBP
                 );
 
-                // 3. Patient에게 데이터 저장 요청 (분석 X)
-                // 제공해주신 Patient 코드에 맞춰 riskManager도 전달
+                // 3. 데이터 저장 요청
                 boolean isSaved = currentPatient.inputHealthData(data, riskManager);
 
-                // 4. 결과 피드백
+                // 4. 결과 처리
                 if (isSaved) {
-                    printSuccessMessage(data);
-                    clearFields(); // 입력창 초기화
+                    JOptionPane.showMessageDialog(HealthDataInputUI.this,
+                            "데이터가 성공적으로 저장되었습니다.\n메인 화면으로 돌아갑니다.");
+
+                    // [수정 3] 저장 성공 시 창을 닫고 메인으로 복귀
+                    dispose();
                 } else {
                     JOptionPane.showMessageDialog(HealthDataInputUI.this, "저장에 실패했습니다.");
                 }
 
             } catch (NumberFormatException ex) {
                 JOptionPane.showMessageDialog(HealthDataInputUI.this,
-                        "숫자 형식이 올바르지 않습니다.", "입력 오류", JOptionPane.ERROR_MESSAGE);
+                        "숫자 형식이 올바르지 않습니다.\n혈압과 혈당은 숫자로 입력해주세요.",
+                        "입력 오류", JOptionPane.ERROR_MESSAGE);
             }
         }
-    }
-
-    private void printSuccessMessage(HealthData data) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("✅ [시스템] 데이터 저장 완료\n");
-        sb.append("──────────────────────\n");
-        sb.append(String.format("• 기록일자: %s\n", java.time.LocalDate.now()));
-        sb.append(String.format("• 혈압: %d mmHg\n", data.getMaxBloodPressure()));
-        sb.append(String.format("• 혈당: %.1f mg/dL\n", data.getBloodSugar()));
-        sb.append(String.format("• 활동량 레벨: %d mg/dL\n", data.getActivityLevel()));
-        sb.append(String.format("• 현재 흡연 여부: %b \n", data.isSmokingStatus()));
-        sb.append("──────────────────────\n");
-        sb.append("※ 위험도 분석은 별도 메뉴를 이용해주세요.");
-
-        taResult.setText(sb.toString());
-        taResult.setForeground(new Color(0, 100, 0)); // 짙은 녹색
-    }
-
-    // 편의 기능: 저장 후 입력창 비우기
-    private void clearFields() {
-        tfMaxBP.setText("");
-        tfBloodSugar.setText("");
-        tfBodyComp.setText("");
-        chkSmoking.setSelected(false);
-        comboActivity.setSelectedIndex(0);
     }
 }

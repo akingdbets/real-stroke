@@ -6,47 +6,60 @@ public class MainDashboard extends JFrame {
     private Patient patient;
     private RiskManager riskManager;
     private Parameter parameter;
+    private Runnable logoutAction; // [추가]
 
-    public MainDashboard(Patient patient, RiskManager riskManager, Parameter parameter) {
+    // [수정] 생성자에 logoutAction 추가
+    public MainDashboard(Patient patient, RiskManager riskManager, Parameter parameter, Runnable logoutAction) {
         this.patient = patient;
         this.riskManager = riskManager;
         this.parameter = parameter;
+        this.logoutAction = logoutAction; // 저장
 
-        setTitle("뇌졸중 재발 방지 관리 시스템");
-        setSize(400, 300);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); // 메인 창을 닫으면 프로그램 종료
-        setLayout(new GridLayout(3, 1, 10, 10)); // 3행 1열 그리드
+        setTitle("환자용 대시보드 - " + patient.getName());
+        setSize(400, 350); // 높이 조금 늘림
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLayout(new BorderLayout());
 
-        // 1. 환자 정보 표시 (간단히)
-        JLabel lblWelcome = new JLabel(patient.getName() + "님, 환영합니다.", SwingConstants.CENTER);
+        // 1. 환영 문구
+        JLabel lblWelcome = new JLabel(patient.getName() + "님 (" + patient.getBirthDate() + ")", SwingConstants.CENTER);
         lblWelcome.setFont(new Font("SansSerif", Font.BOLD, 18));
-        add(lblWelcome);
+        lblWelcome.setBorder(BorderFactory.createEmptyBorder(20, 0, 20, 0));
+        add(lblWelcome, BorderLayout.NORTH);
 
-        // 2. 입력 창 열기 버튼
+        // 2. 버튼 패널
+        JPanel centerPanel = new JPanel(new GridLayout(3, 1, 10, 10));
+        centerPanel.setBorder(BorderFactory.createEmptyBorder(0, 40, 20, 40));
+
         JButton btnOpenInput = new JButton("📝 건강 데이터 입력하기");
-        btnOpenInput.addActionListener(e -> openInputUI());
-        add(btnOpenInput);
-
-        // 3. 분석 창 열기 버튼
         JButton btnOpenAnalysis = new JButton("📊 위험도 분석 결과 보기");
-        btnOpenAnalysis.addActionListener(e -> openAnalysisUI());
-        add(btnOpenAnalysis);
+        JButton btnLogout = new JButton("로그아웃"); // [추가]
 
-        // 여백 주기
-        ((JPanel)getContentPane()).setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        btnOpenInput.addActionListener(e -> openInputUI());
+        btnOpenAnalysis.addActionListener(e -> openAnalysisUI());
+
+        // [추가] 로그아웃 버튼 동작
+        btnLogout.addActionListener(e -> {
+            this.dispose();     // 현재 창 닫기
+            logoutAction.run(); // 로그인 창 다시 열기
+        });
+
+        centerPanel.add(btnOpenInput);
+        centerPanel.add(btnOpenAnalysis);
+        centerPanel.add(btnLogout); // 패널에 추가
+
+        add(centerPanel, BorderLayout.CENTER);
     }
 
+    // ... openInputUI, openAnalysisUI 메서드는 기존과 동일 ...
     private void openInputUI() {
-        // 새 입력 창 생성 (DISPOSE_ON_CLOSE로 설정해야 메인 창이 안 꺼짐)
         HealthDataInputUI inputUI = new HealthDataInputUI(patient, riskManager);
-        inputUI.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        inputUI.setLocationRelativeTo(this);
         inputUI.setVisible(true);
     }
 
     private void openAnalysisUI() {
-        // 새 분석 창 생성
         HealthDataAnalysisUI analysisUI = new HealthDataAnalysisUI(patient, riskManager, parameter);
-        // 분석 창은 이미 내부에서 DISPOSE_ON_CLOSE로 되어 있어서 그대로 두면 됨
+        analysisUI.setLocationRelativeTo(this);
         analysisUI.setVisible(true);
     }
 }

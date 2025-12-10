@@ -5,14 +5,16 @@ import java.util.NoSuchElementException;
 public class Patient {
     private String userID;
     private String name;
+    private String birthDate;
 
     // Patient "has" HealthData (1:N 관계 구현)
     private List<HealthData> healthDataList;
     private List<Risk> riskList;
 
-    public Patient(String userID, String name) {
+    public Patient(String userID, String name, String birthDate) {
         this.userID = userID;
         this.name = name;
+        this.birthDate = birthDate;
         this.healthDataList = new ArrayList<>();
         this.riskList = new ArrayList<>();
     }
@@ -71,4 +73,5 @@ public class Patient {
     public String getName() {
         return name;
     }
+    public String getBirthDate() { return birthDate; }
 }

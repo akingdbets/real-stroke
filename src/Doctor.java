@@ -8,16 +8,17 @@ public class Doctor {
     private String doctorId;
     private String name;
     private List<Patient> managedPatients; // DB 대신 리스트로 관리
+    private String birthDate;
 
-    public Doctor(String doctorId, String name) {
+    public Doctor(String doctorId, String name, String birthDate) {
         this.doctorId = doctorId;
         this.name = name;
+        this.birthDate = birthDate;
         this.managedPatients = new ArrayList<>();
     }
 
-    public String getName() {
-        return name;
-    }
+    public String getName() {return name;}
+    public String getBirthDate() { return birthDate; }
 
     // 환자 추가 (연관관계 설정)
     public void addPatient(Patient patient) {
