@@ -6,6 +6,7 @@ public class Patient {
     private String userID;
     private String name;
     private String birthDate;
+    private String doctorWeeklyMemo = "";
 
     // Patient "has" HealthData (1:N 관계 구현)
     private List<HealthData> healthDataList;
@@ -17,6 +18,7 @@ public class Patient {
         this.birthDate = birthDate;
         this.healthDataList = new ArrayList<>();
         this.riskList = new ArrayList<>();
+        this.doctorWeeklyMemo = ""; // 초기값은 빈 문자열
     }
 
     /**
@@ -68,6 +70,49 @@ public class Patient {
         for (HealthData data : healthDataList) {
             System.out.println(data.toString());
         }
+    }
+
+    //주간 리포트용: 최근 7회 데이터 평균 계산
+    public String getWeeklySummary() {
+        if (healthDataList.isEmpty()) {
+            return "데이터가 충분하지 않습니다.";
+        }
+
+        int count = 0;
+        double sumSysBP = 0;
+        double sumSugar = 0;
+        int maxLookBack = 7; // 최근 7개 데이터만
+
+        // 리스트의 뒤에서부터(최신순) 최대 7개 가져오기
+        for (int i = healthDataList.size() - 1; i >= 0; i--) {
+            HealthData h = healthDataList.get(i);
+            sumSysBP += h.getMaxBloodPressure();
+            sumSugar += h.getBloodSugar();
+            count++;
+            if (count >= maxLookBack) break;
+        }
+
+        double avgBP = sumSysBP / count;
+        double avgSugar = sumSugar / count;
+
+        return String.format(
+                "<html>" +
+                        "<b>[최근 %d건 기록 평균]</b><br>" +
+                        "• 평균 수축기 혈압: %.1f mmHg<br>" +
+                        "• 평균 혈당: %.1f mg/dL<br>" +
+                        "</html>",
+                count, avgBP, avgSugar
+        );
+    }
+
+    //소견 저장 및 불러오기 메서드 (Getter/Setter)
+    public String getDoctorWeeklyMemo() {
+        return doctorWeeklyMemo;
+    }
+
+    public void setDoctorWeeklyMemo(String memo) {
+        this.doctorWeeklyMemo = memo;
+        System.out.println("[System] " + this.name + "님의 주간 소견이 업데이트되었습니다.");
     }
 
     public String getName() {

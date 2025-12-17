@@ -11,7 +11,8 @@ public class HealthDataAnalysisUI extends JFrame {
     private Parameter parameter;
 
     private JLabel lblDataDate, lblBp, lblSugar, lblSmoke;
-    private JTextArea taResult;
+    private JTextArea taResult;      // 알고리즘 분석 결과
+    private JTextArea taDoctorMemo;  // [추가] 주치의 소견 표시창
     private JButton btnAnalyze;
 
     public HealthDataAnalysisUI(Patient patient, RiskManager riskManager, Parameter parameter) {
@@ -20,13 +21,14 @@ public class HealthDataAnalysisUI extends JFrame {
         this.parameter = parameter;
 
         setTitle("뇌졸중 위험도 분석 센터");
-        setSize(400, 450);
+        setSize(420, 600); // 내용을 다 보여주기 위해 높이 증가
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLayout(new BorderLayout());
 
-        // 1. 상단: 분석 대상 데이터 요약 정보
-        JPanel infoPanel = new JPanel(new GridLayout(5, 1));
+        // 1. 상단: 최신 데이터 요약
+        JPanel infoPanel = new JPanel(new GridLayout(4, 1));
         infoPanel.setBorder(BorderFactory.createTitledBorder("분석 대상 (최신 기록)"));
+        infoPanel.setBackground(new Color(245, 245, 255));
 
         lblDataDate = new JLabel("기록 일시: -");
         lblBp = new JLabel("최고 혈압: -");
@@ -38,64 +40,83 @@ public class HealthDataAnalysisUI extends JFrame {
         infoPanel.add(lblSugar);
         infoPanel.add(lblSmoke);
 
-        // 2. 중앙: 분석 버튼 (순서 변경: 이 부분을 먼저 생성해야 합니다!)
+        // 2. 중앙: 분석 버튼
         JPanel btnPanel = new JPanel();
-        btnAnalyze = new JButton("⚠️ 위험도 분석 실행");
+        btnAnalyze = new JButton("⚠️ 위험도 정밀 분석 실행");
         btnAnalyze.setFont(new Font("SansSerif", Font.BOLD, 16));
-        btnAnalyze.setBackground(new Color(230, 230, 250));
+        btnAnalyze.setBackground(new Color(255, 230, 230));
         btnAnalyze.addActionListener(new AnalyzeAction());
         btnPanel.add(btnAnalyze);
 
-        // [중요 수정] 버튼 생성 후에 데이터를 로드해야 에러가 안 납니다.
+        // 먼저 데이터 로드 (버튼 활성화 여부 결정)
         loadLatestData();
 
-        // 3. 하단: 결과 리포트
-        taResult = new JTextArea(8, 20);
+        // 3. 하단: 결과 리포트 영역 (SplitPane 사용)
+        // 위쪽: 알고리즘 분석 결과 / 아래쪽: 주치의 소견
+
+        // (A) 알고리즘 결과창
+        taResult = new JTextArea();
         taResult.setEditable(false);
-        taResult.setFont(new Font("Monospaced", Font.PLAIN, 14));
-        JScrollPane scrollPane = new JScrollPane(taResult);
-        scrollPane.setBorder(BorderFactory.createTitledBorder("분석 리포트"));
+        taResult.setFont(new Font("Monospaced", Font.PLAIN, 13));
+        JScrollPane scrollResult = new JScrollPane(taResult);
+        scrollResult.setBorder(BorderFactory.createTitledBorder("🤖 AI 위험도 분석 리포트"));
+
+        // (B) 주치의 소견창 [신규 추가]
+        taDoctorMemo = new JTextArea();
+        taDoctorMemo.setEditable(false); // 환자는 읽기만 가능
+        taDoctorMemo.setFont(new Font("Monospaced", Font.PLAIN, 13));
+        taDoctorMemo.setForeground(new Color(0, 0, 150)); // 파란색 글씨
+        taDoctorMemo.setLineWrap(true);
+
+        // 소견 데이터 불러오기
+        String savedMemo = currentPatient.getDoctorWeeklyMemo();
+        if (savedMemo == null || savedMemo.isEmpty()) {
+            taDoctorMemo.setText("(아직 등록된 주치의 소견이 없습니다.)");
+        } else {
+            taDoctorMemo.setText(savedMemo);
+        }
+
+        JScrollPane scrollMemo = new JScrollPane(taDoctorMemo);
+        scrollMemo.setBorder(BorderFactory.createTitledBorder("👨‍⚕️ 주치의 선생님의 코멘트"));
+
+        // 화면 분할 (위:아래 = 5:5 비율)
+        JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, scrollResult, scrollMemo);
+        splitPane.setDividerLocation(200); // 분할선 위치
+        splitPane.setResizeWeight(0.5);
 
         add(infoPanel, BorderLayout.NORTH);
-        add(btnPanel, BorderLayout.CENTER);
-        add(scrollPane, BorderLayout.SOUTH);
+        add(btnPanel, BorderLayout.CENTER); // 버튼은 중앙 상단
+        add(splitPane, BorderLayout.SOUTH); // 리포트 영역은 하단 전체
+
+        // 레이아웃 보정 (Center 영역이 너무 작아지는 것 방지)
+        JPanel centerContainer = new JPanel(new BorderLayout());
+        centerContainer.add(btnPanel, BorderLayout.NORTH);
+        centerContainer.add(splitPane, BorderLayout.CENTER);
+        add(centerContainer, BorderLayout.CENTER);
     }
 
-    // 환자의 최근 데이터를 화면에 뿌려주는 헬퍼 메서드
     private void loadLatestData() {
         try {
             HealthData data = currentPatient.getLatestHealthData();
-            // 실제 앱에서는 data.getRecordDate() 등을 사용
             lblDataDate.setText("기록 일시: " + java.time.LocalDate.now());
             lblBp.setText("최고 혈압: " + data.getMaxBloodPressure() + " mmHg");
             lblSugar.setText("혈당: " + data.getBloodSugar() + " mg/dL");
             lblSmoke.setText("흡연 여부: " + (data.isSmokingStatus() ? "예" : "아니오"));
 
-            // 여기서 btnAnalyze를 쓰기 때문에, 버튼이 먼저 생성되어 있어야 함
-            if (btnAnalyze != null) {
-                btnAnalyze.setEnabled(true);
-            }
+            if (btnAnalyze != null) btnAnalyze.setEnabled(true);
         } catch (NoSuchElementException | IndexOutOfBoundsException e) {
             lblDataDate.setText("저장된 데이터가 없습니다.");
-            if (btnAnalyze != null) {
-                btnAnalyze.setEnabled(false);
-            }
+            if (btnAnalyze != null) btnAnalyze.setEnabled(false);
         }
     }
 
-    // 분석 버튼 리스너
     private class AnalyzeAction implements ActionListener {
         @Override
         public void actionPerformed(ActionEvent e) {
             try {
-                // 1. [Behavior] Patient에게 분석 메시지 전송
                 currentPatient.performRiskAnalysis(riskManager, parameter);
-
-                // 2. [View] 결과값 가져와서 출력
                 Risk result = currentPatient.getLatestRisk();
-
                 printReport(result);
-
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(HealthDataAnalysisUI.this,
                         "분석 중 오류 발생: " + ex.getMessage());
@@ -112,13 +133,12 @@ public class HealthDataAnalysisUI extends JFrame {
 
         if ("위험".equals(risk.getRiskLevel())) {
             sb.append("🚨 [위험] 기준치를 초과했습니다.\n");
-            sb.append("   즉시 전문의와 상담하시기 바랍니다.\n");
-            sb.append("   (담당자에게 알림이 전송되었습니다)\n");
+            sb.append("   즉시 전문의와 상담하세요.\n");
             taResult.setForeground(Color.RED);
         } else {
             sb.append("✅ [정상] 건강 상태가 양호합니다.\n");
-            sb.append("   현재 생활 습관을 유지하세요.\n");
-            taResult.setForeground(new Color(0, 100, 0)); // 짙은 녹색
+            sb.append("   현재 습관을 유지하세요.\n");
+            taResult.setForeground(new Color(0, 100, 0));
         }
         taResult.setText(sb.toString());
     }
