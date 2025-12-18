@@ -22,6 +22,7 @@ public class HealthData {
         this.bodyComposition = bodyComposition;
         this.activityLevel = activityLevel;
         this.maxBloodPressure = maxBloodPressure;
+        this.recordDate = LocalDate.now(); // 기본은 오늘 날짜
 
         // 초기값은 false (아직 복용 체크 안 함)
         this.medicationTaken = false;
@@ -33,10 +34,16 @@ public class HealthData {
         System.out.println(">> 약물 복용 상태가 업데이트 되었습니다: " + isTaken);
     }
 
+    // [추가] 테스트용: 날짜를 강제로 변경하는 메서드
+    public void setRecordDate(LocalDate date) {
+        this.recordDate = date;
+    }
+
     // Getters
     public boolean isSmokingStatus() { return smokingStatus; }
     public float getBloodSugar() { return bloodSugar; }
     public int getActivityLevel() { return activityLevel; }
     public int getMaxBloodPressure() { return maxBloodPressure; }
     public boolean isMedicationTaken() { return medicationTaken; }
+    public LocalDate getRecordDate() {return recordDate;}
 }

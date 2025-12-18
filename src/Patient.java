@@ -115,6 +115,18 @@ public class Patient {
         System.out.println("[System] " + this.name + "님의 주간 소견이 업데이트되었습니다.");
     }
 
+    //최근 n건의 건강 데이터 리스트 반환 (최신순 정렬)
+    public List<HealthData> getRecentHealthData(int n) {
+        List<HealthData> result = new ArrayList<>();
+        int size = healthDataList.size();
+
+        // 뒤에서부터(최신 데이터부터) n개 가져오기
+        for (int i = size - 1; i >= 0 && result.size() < n; i--) {
+            result.add(healthDataList.get(i));
+        }
+        return result;
+    }
+
     public String getName() {
         return name;
     }
